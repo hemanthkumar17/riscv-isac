@@ -23,7 +23,7 @@ import multiprocessing as mp
 from collections.abc import MutableMapping
 
 
-unsgn_rs1 = ['sw','sd','sh','sb','ld','lw','lwu','lh','lhu','lb', 'lbu','flw','fld','fsw','fsd'\
+unsgn_rs1 = ['sw','sd','sh','sb','ld','lw','lwu','lh','lhu','lb', 'lbu', 'flh', 'flw','fld', 'fsh', 'fsw','fsd'\
         'bgeu', 'bltu', 'sltiu', 'sltu','c.lw','c.ld','c.lwsp','c.ldsp',\
         'c.sw','c.sd','c.swsp','c.sdsp','mulhu','divu','remu','divuw',\
         'remuw','aes64ds','aes64dsm','aes64es','aes64esm','aes64ks2',\
@@ -228,7 +228,8 @@ class csr_registers(MutableMapping):
             self.csr_regs["mhpmevent"+str(i)] = int('323',16) + (i-3)
 
     def __setitem__ (self,key,value):
-
+        logger.info(key)
+        logger.info(value)
         if(isinstance(key, str)):
             self.csr[self.csr_regs[key]] = value
         else:
@@ -279,6 +280,9 @@ class archState:
         else:
             self.x_rf = ['0000000000000000']*32
 
+        if flen == 16:
+            self.f_rf = ['0000']*32
+            self.fcsr = 0
         if flen == 32:
             self.f_rf = ['00000000']*32
             self.fcsr = 0
@@ -549,11 +553,12 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
         rs1_val = struct.unpack(unsgn_sz, bytes.fromhex(arch_state.x_rf[rs1]))[0]
     elif rs1_type == 'x':
         rs1_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs1]))[0]
-        if instr.instr_name in ["fmv.w.x"]:
+        if instr.instr_name in ["fmv.w.x", "fmv.w.h"]:
             rs1_val = '0x' + (arch_state.x_rf[rs1]).lower()
     elif rs1_type == 'f':
         rs1_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.f_rf[rs1]))[0]
-        if instr.instr_name in ["fadd.s","fsub.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fmv.x.w","fmv.w.x","fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w","fsgnj.s","fsgnjn.s","fsgnjx.s","fclass.s"]:
+        if instr.instr_name in ["fadd.s","fsub.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fmv.x.w","fmv.w.x","fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w","fsgnj.s","fsgnjn.s","fsgnjx.s","fclass.s",\
+            "fadd.h","fsub.h","fmul.h","fdiv.h","fsqrt.h","fmadd.h","fmsub.h","fnmadd.h","fnmsub.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fmv.w.h","fmv.h.w","fcvt.s.h","fcvt.h.s","fcvt.wu.h","fcvt.h.wu","fcvt.w.h","fcvt.h.w","fsgnj.h","fsgnjn.h","fsgnjx.h","fclass.h",]:
             rs1_val = '0x' + (arch_state.f_rf[rs1]).lower()
 
     if instr.instr_name in unsgn_rs2:
@@ -562,16 +567,19 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
         rs2_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs2]))[0]
     elif rs2_type == 'f':
         rs2_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.f_rf[rs2]))[0]
-        if instr.instr_name in ["fadd.s","fsub.s","fmul.s","fdiv.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s"]:
+        if instr.instr_name in ["fadd.s","fsub.s","fmul.s","fdiv.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s",\
+            "fadd.h","fsub.h","fmul.h","fdiv.h","fmadd.h","fmsub.h","fnmadd.h","fnmsub.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fsgnj.h","fsgnjn.h","fsgnjx.h",]:
             rs2_val = '0x' + (arch_state.f_rf[rs2]).lower()
 
-    if instr.instr_name in ["fmadd.s","fmsub.s","fnmadd.s","fnmsub.s"]:
+    if instr.instr_name in ["fmadd.s","fmsub.s","fnmadd.s","fnmsub.s",\
+        "fmadd.h","fmsub.h","fnmadd.h","fnmsub.h"]:
         rs3_val = '0x' + (arch_state.f_rf[rs3]).lower()
 
     if instr.instr_name in ['csrrwi']:
         arch_state.fcsr = instr.zimm
 
-    if instr.instr_name in ["fadd.s","fsub.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fmv.x.w","fmv.w.x","fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w","fsgnj.s","fsgnjn.s","fsgnjx.s","fclass.s"]:
+    if instr.instr_name in ["fadd.s","fsub.s","fmul.s","fdiv.s","fsqrt.s","fmadd.s","fmsub.s","fnmadd.s","fnmsub.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fmv.x.w","fmv.w.x","fcvt.wu.s","fcvt.s.wu","fcvt.w.s","fcvt.s.w","fsgnj.s","fsgnjn.s","fsgnjx.s","fclass.s",\
+        "fadd.h","fsub.h","fmul.h","fdiv.h","fsqrt.h","fmadd.h","fmsub.h","fnmadd.h","fnmsub.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fmv.w.h","fmv.h.w","fcvt.s.h","fcvt.h.s","fcvt.wu.h","fcvt.h.wu","fcvt.w.h","fcvt.h.w","fsgnj.h","fsgnjn.h","fsgnjx.h","fclass.h"]:
          rm = instr.rm
          if(rm==7 or rm==None):
               rm_val = arch_state.fcsr
@@ -588,7 +596,7 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
     if instr.instr_name == "jalr":
         ea_align = (rs1_val + imm_val) % 4
 
-    if instr.instr_name in ['sw','sh','sb','lw','lhu','lh','lb','lbu','lwu','flw','fsw']:
+    if instr.instr_name in ['sw','sh','sb','lw','lhu','lh','lb','lbu','lwu','flw','fsw', 'flh', 'fsh']:
         ea_align = (rs1_val + imm_val) % 4
     if instr.instr_name in ['ld','sd']:
         ea_align = (rs1_val + imm_val) % 8
@@ -703,8 +711,56 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                             stats.ucovpt.append(str(val_key[0]))
                                         stats.covpt.append(str(val_key[0]))
                                         cgf[cov_labels]['val_comb'][val_key[0]] += 1
+                            elif instr.instr_name in ['fadd.h',"fsub.h","fmul.h","fdiv.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fsgnj.h","fsgnjn.h","fsgnjx.h"]:
+                                    logger.info("RS1, RS2")
+                                    logger.info(rs1_val)
+                                    logger.info(rs2_val)
+                                    logger.info(type(rs1_val))
+                                    logger.info(type(rs2_val))
+                                    val_key = fmt.extract_fields(16, rs1_val, str(1))
+                                    val_key+= " and "
+                                    val_key+= fmt.extract_fields(16, rs2_val, str(2))
+                                    val_key+= " and "
+                                    val_key+= 'rm == '+ str(rm_val)
+                                    l=[0]
+                                    l[0] = val_key
+                                    val_key = l
+                                    if(val_key[0] in cgf[cov_labels]['val_comb']):
+                                        if cgf[cov_labels]['val_comb'][val_key[0]] == 0:
+                                            stats.ucovpt.append(str(val_key[0]))
+                                        stats.covpt.append(str(val_key[0]))
+                                        cgf[cov_labels]['val_comb'][val_key[0]] += 1
+                            elif instr.instr_name in ["fsqrt.h","fmv.x.h","fmv.h.x","fcvt.wu.h","fcvt.h.wu","fcvt.w.h","fcvt.h.w","fcvt.s.h","fcvt.h.s","fclass.h"]:
+                                    val_key = fmt.extract_fields(16, rs1_val, str(1))
+                                    val_key+= " and "
+                                    val_key+= 'rm == '+ str(rm_val)
+                                    l=[0]
+                                    l[0] = val_key
+                                    val_key = l
+                                    if(val_key[0] in cgf[cov_labels]['val_comb']):
+                                        if cgf[cov_labels]['val_comb'][val_key[0]] == 0:
+                                            stats.ucovpt.append(str(val_key[0]))
+                                        stats.covpt.append(str(val_key[0]))
+                                        cgf[cov_labels]['val_comb'][val_key[0]] += 1
+                            elif instr.instr_name in ["fmadd.h","fmsub.h","fnmadd.h","fnmsub.h"]:
+                                    val_key = fmt.extract_fields(16, rs1_val, str(1))
+                                    val_key+= " and "
+                                    val_key+= fmt.extract_fields(16, rs2_val, str(2))
+                                    val_key+= " and "
+                                    val_key+= fmt.extract_fields(16, rs3_val, str(3))
+                                    val_key+= " and "
+                                    val_key+= 'rm == '+ str(rm_val)
+                                    l=[0]
+                                    l[0] = val_key
+                                    val_key = l
+                                    if(val_key[0] in cgf[cov_labels]['val_comb']):
+                                        if cgf[cov_labels]['val_comb'][val_key[0]] == 0:
+                                            stats.ucovpt.append(str(val_key[0]))
+                                        stats.covpt.append(str(val_key[0]))
+                                        cgf[cov_labels]['val_comb'][val_key[0]] += 1
                             else:
                                 for coverpoints in value['val_comb']:
+                                    logger.info(coverpoints)
                                     if eval(coverpoints):
                                         if cgf[cov_labels]['val_comb'][coverpoints] == 0:
                                             stats.ucovpt.append(str(coverpoints))
@@ -790,12 +846,15 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
             arch_state.x_rf[int(commitvalue[1])] =  str(commitvalue[2][2:])
         elif rd_type == 'f':
             arch_state.f_rf[int(commitvalue[1])] =  str(commitvalue[2][2:])
-
-    csr_commit = instr.csr_commit
-    if csr_commit is not None:
-        for commits in csr_commit:
-            if(commits[0]=="CSR"):
-                csr_regfile[commits[1]] = str(commits[2][2:])
+    logger.info(rd_type)
+    logger.info(arch_state.f_rf)
+    logger.info(arch_state.fcsr)
+    logger.info("_-"*15)
+    # csr_commit = instr.csr_commit
+    # if csr_commit is not None:
+    #     for commits in csr_commit:
+    #         if(commits[0]=="CSR"):
+    #             csr_regfile[commits[1]] = str(commits[2][2:])
 
 
     return cgf
@@ -865,11 +924,14 @@ def compute(trace_file, test_name, cgf, parser_name, decoder_name, detailed, xle
     iterator = iter(parser.__iter__()[0])
     rcgf = cgf
     for instrObj_temp in iterator:
+        logger.info(instrObj_temp)
+        logger.info("+"*30)
         instr = instrObj_temp.instr
         if instr is None:
             continue
         instrObj = (decoder.decode(instrObj_temp = instrObj_temp))[0]
-        logger.debug(instrObj)
+        logger.info(instrObj)
+        logger.info(".'"*20)
         cross_cover_queue.append(instrObj)
         if(len(cross_cover_queue)>=window_size):
             for (label,coverpt) in obj_dict.keys():

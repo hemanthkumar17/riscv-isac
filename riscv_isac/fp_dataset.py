@@ -493,7 +493,6 @@ def ibm_b2(flen, opcode, ops, int_val = 100, seed = -1):
 				result.append(['0x'+hex(eval(bin(int('1'+flip_types[i][2:], 16))) ^ eval('0b'+'{:023b}'.format(k)))[3:],' | Result = '+num_explain(flen, '0x'+str(hex(eval(bin(int('1'+flip_types[i][2:], 16))))[3:]))+'(0x'+str(hex(eval(bin(int('1'+flip_types[i][2:], 16))))[3:])+')^'+str('0x'+hex(eval('0b'+'1'+'{:024b}'.format(k)))[3:])])
 				k=k*2
 	for i in range(len(result)):
-		print(result[i])
 		bin_val = bin(int('1'+result[i][0][2:],16))[3:]
 		rsgn = bin_val[0]
 		rexp = bin_val[1:e_sz+1]
