@@ -18,8 +18,8 @@ class disassembler():
             0b0011011: self.rv64i_arithi_ops,
             0b0111011: self.rv64i_arith_ops,
             0b0101111: self.rv64_rv32_atomic_ops,
-            0b0000111: self.flw_fld,
-            0b0100111: self.fsw_fsd,
+            0b0000111: self.flw_fld_flh,
+            0b0100111: self.fsw_fsd_fsh,
             0b1000011: self.fmadd,
             0b1000111: self.fmsub,
             0b1001011: self.fnmsub,
@@ -523,7 +523,7 @@ class disassembler():
 
             return instrObj
 
-    def flw_fld(self, instrObj):
+    def flw_fld_flh(self, instrObj):
         instr = instrObj.instr
         rd = ((instr & self.RD_MASK) >> 7, 'f')
         rs1 = ((instr & self.RS1_MASK) >> 15, 'x')
@@ -538,10 +538,12 @@ class disassembler():
             instrObj.instr_name = 'flw'
         elif funct3 == 0b011:
             instrObj.instr_name = 'fld'
+        elif funct3 == 0b001:
+            instrObj.instr_name = 'flh'
 
         return instrObj
 
-    def fsw_fsd(self, instrObj):
+    def fsw_fsd_fsh(self, instrObj):
         instr = instrObj.instr
         imm_4_0 = (instr & self.RD_MASK) >> 7
         imm_11_5 = (instr >> 25) << 5
@@ -559,6 +561,8 @@ class disassembler():
             instrObj.instr_name = 'fsw'
         elif funct3 == 0b011:
             instrObj.instr_name = 'fsd'
+        elif funct3 == 0b001:
+            instrObj.instr_name = 'fsh'
 
         return instrObj
 
@@ -569,7 +573,7 @@ class disassembler():
         rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
         rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
         rs3 = ((instr >> 27), 'f')
-        size_bit = (instr >> 25) & 0x00000001
+        size_bit = (instr >> 25) & 0x00000003
 
         instrObj.rs1 = rs1
         instrObj.rs2 = rs2
@@ -578,11 +582,12 @@ class disassembler():
         instrObj.rm = rm
         instrObj.rs3 = rs3
 
-        if size_bit == 0b0:
-            print(rs1, rs2, rs3)
+        if size_bit == 0b00:
             instrObj.instr_name = 'fmadd.s'
-        elif size_bit == 0b1:
+        elif size_bit == 0b01:
             instrObj.instr_name = 'fmadd.d'
+        elif size_bit == 0b10:
+            instrObj.instr_name = 'fmadd.h'
 
         return instrObj
 
@@ -593,7 +598,7 @@ class disassembler():
         rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
         rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
         rs3 = ((instr >> 27), 'f')
-        size_bit = (instr >> 25) & 0x00000001
+        size_bit = (instr >> 25) & 0x00000003
 
         instrObj.rs1 = rs1
         instrObj.rs2 = rs2
@@ -602,10 +607,12 @@ class disassembler():
         instrObj.rm = rm
         instrObj.rs3 = rs3
 
-        if size_bit == 0b0:
+        if size_bit == 0b00:
             instrObj.instr_name = 'fmsub.s'
-        elif size_bit == 0b1:
+        elif size_bit == 0b01:
             instrObj.instr_name = 'fmsub.d'
+        elif size_bit == 0b10:
+            instrObj.instr_name = 'fmsub.h'
 
         return instrObj
 
@@ -616,7 +623,7 @@ class disassembler():
         rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
         rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
         rs3 = ((instr >> 27), 'f')
-        size_bit = (instr >> 25) & 0x00000001
+        size_bit = (instr >> 25) & 0x00000003
 
         instrObj.rs1 = rs1
         instrObj.rs2 = rs2
@@ -625,10 +632,12 @@ class disassembler():
         instrObj.rm = rm
         instrObj.rs3 = rs3
 
-        if size_bit == 0b0:
+        if size_bit == 0b00:
             instrObj.instr_name = 'fnmsub.s'
-        elif size_bit == 0b1:
+        elif size_bit == 0b01:
             instrObj.instr_name = 'fnmsub.d'
+        elif size_bit == 0b10:
+            instrObj.instr_name = 'fnmsub.h'
 
         return instrObj
 
@@ -639,7 +648,7 @@ class disassembler():
         rs1 = ((instr & self.RS1_MASK) >> 15, 'f')
         rs2 = ((instr & self.RS2_MASK) >> 20, 'f')
         rs3 = ((instr >> 27), 'f')
-        size_bit = (instr >> 25) & 0x00000001
+        size_bit = (instr >> 25) & 0x00000003
 
         instrObj.rs1 = rs1
         instrObj.rs2 = rs2
@@ -647,10 +656,12 @@ class disassembler():
         instrObj.rm = rm
         instrObj.rs3 = rs3
 
-        if size_bit == 0b0:
+        if size_bit == 0b00:
             instrObj.instr_name = 'fnmadd.s'
-        elif size_bit == 0b1:
+        elif size_bit == 0b01:
             instrObj.instr_name = 'fnmadd.d'
+        elif size_bit == 0b10:
+            instrObj.instr_name = 'fnmadd.h'
 
         return instrObj
 
@@ -684,8 +695,16 @@ class disassembler():
             instrObj.instr_name = 'fmul.d'
         elif funct7 == 0b0001101:
             instrObj.instr_name = 'fdiv.d'
+        elif funct7 == 0b0000010:
+            instrObj.instr_name = 'fadd.h'
+        elif funct7 == 0b0000110:
+            instrObj.instr_name = 'fsub.h'
+        elif funct7 == 0b0001010:
+            instrObj.instr_name = 'fmul.h'
+        elif funct7 == 0b0001110:
+            instrObj.instr_name = 'fdiv.h'
 
-        if instrObj.instr_name != "None":
+        if instrObj.instr_name is not None:
             return instrObj
 
         # fsqrt
@@ -695,6 +714,10 @@ class disassembler():
             return instrObj
         elif funct7 == 0b0101101:
             instrObj.instr_name = 'fsqrt.d'
+            instrObj.rs2 = None
+            return instrObj
+        elif funct7 == 0b0101110:
+            instrObj.instr_name = 'fsqrt.h'
             instrObj.rs2 = None
             return instrObj
 
@@ -719,6 +742,16 @@ class disassembler():
             elif rm == 0b010:
                 instrObj.instr_name = 'fsgnjx.d'
                 return instrObj
+        elif funct7 == 0b0010010:
+            if rm == 0b000:
+                instrObj.instr_name = 'fsgnj.h'
+                return instrObj
+            elif rm == 0b001:
+                instrObj.instr_name = 'fsgnjn.h'
+                return instrObj
+            elif rm == 0b010:
+                instrObj.instr_name = 'fsgnjx.h'
+                return instrObj
 
         # fmin, fmax
         if funct7 == 0b0010100:
@@ -734,6 +767,13 @@ class disassembler():
                 return instrObj
             elif rm == 0b001:
                 instrObj.instr_name = 'fmax.d'
+                return instrObj
+        elif funct7 == 0b0010110:
+            if rm == 0b000:
+                instrObj.instr_name = 'fmin.h'
+                return instrObj
+            elif rm == 0b001:
+                instrObj.instr_name = 'fmax.h'
                 return instrObj
 
         # fcvt.w, fcvt.wu, fcvt.l, fcvt.lu
@@ -807,8 +847,20 @@ class disassembler():
                 instrObj.instr_name = 'fle.d'
                 return instrObj
 
+        if funct7 == 0b1010010:
+            instrObj.rd = (rd[0], 'x')
+            if rm == 0b010:
+                instrObj.instr_name = 'feq.h'
+                return instrObj
+            elif rm == 0b001:
+                instrObj.instr_name = 'flt.h'
+                return instrObj
+            elif rm == 0b000:
+                instrObj.instr_name = 'fle.h'
+                return instrObj
+
         # fcvt.s.w, fcvt.s.wu, fcvt.s.l, fcvt.s.lu
-        if funct7 == 0b1101000:
+        if funct7 == 0b1100100:
             mode = rs2[0]
             instrObj.rs1 = (rs1[0], 'x')
             instrObj.rs2 = None
@@ -893,6 +945,103 @@ class disassembler():
             instrObj.rs1 = (rs1[0], 'x')
             instrObj.rs2 = None
             return instrObj
+        
+        # fcvt.w.h, fcvt.wu.h, fcvt.l.h, fcvt.lu.h
+        if funct7 == 0b1100010:
+            mode = rs2[0]
+            instrObj.rs2 = None
+            instrObj.rd = (rd[0], 'x')
+            if mode == 0b00000:
+                instrObj.instr_name = 'fcvt.w.h'
+                instrObj.rs2 = None
+                return instrObj
+            elif mode == 0b00001:
+                instrObj.instr_name = 'fcvt.wu.h'
+                instrObj.rs2 = None
+                return instrObj
+            elif mode == 0b00010:
+                instrObj.instr_name = 'fcvt.l.h'
+                instrObj.rs2 = None
+                return instrObj
+            elif mode == 0b00011:
+                instrObj.instr_name = 'fcvt.lu.h'
+                instrObj.rs2 = None
+                return instrObj
+
+        # fcvt.h.w, fcvt.h.wu, fcvt.h.l, fcvt.h.lu
+        if funct7 == 0b1101010:
+            mode = rs2[0]
+            instrObj.rs2 = None
+            instrObj.rs1 = (rs1[0], 'x')
+            if mode == 0b00000:
+                instrObj.instr_name = 'fcvt.h.w'
+                instrObj.rs2 = None
+                return instrObj
+            elif mode == 0b00001:
+                instrObj.instr_name = 'fcvt.h.wu'
+                instrObj.rs2 = None
+                return instrObj
+            elif mode == 0b00010:
+                instrObj.instr_name = 'fcvt.h.l'
+                instrObj.rs2 = None
+                return instrObj
+            elif mode == 0b00011:
+                instrObj.instr_name = 'fcvt.h.lu'
+                instrObj.rs2 = None
+                return instrObj
+
+        # fcvt.s.h, fcvt.h.s, fcvt.d.h, fcvt.h.d
+        if funct7 == 0b0100000:
+            if rs2[0] == 0b00010:
+                instrObj.instr_name = 'fcvt.s.h'
+                instrObj.rs2 = None
+                return instrObj
+        if funct7 == 0b0100010:
+            if rs2[0] == 0b00000:
+                instrObj.instr_name = 'fcvt.h.s'
+                instrObj.rs2 = None
+                return instrObj
+        if funct7 == 0b0100001:
+            if rs2[0] == 0b00010:
+                instrObj.instr_name = 'fcvt.d.h'
+                instrObj.rs2 = None
+                return instrObj
+        if funct7 == 0b0100010:
+            if rs2[0] == 0b00001:
+                instrObj.instr_name = 'fcvt.h.d'
+                instrObj.rs2 = None
+                return instrObj
+
+        # # fcvt.h.q, fcvt.q.h      (Zfh, after Q extension is introducted)
+        # if funct7 == 0b0100011:
+        #     if rs2[0] == 0b00010:
+        #         instrObj.instr_name = 'fcvt.q.h'
+        #         instrObj.rs2 = None
+        #         return instrObj
+        # if funct7 == 0b0100010:
+        #     if rs2[0] == 0b00011:
+        #         instrObj.instr_name = 'fcvt.h.q'
+        #         instrObj.rs2 = None
+        #         return instrObj
+
+        if funct7 == 0b1111010:
+            instrObj.instr_name = 'fmv.h.x'
+            instrObj.rs1 = (rs1[0], 'x')
+            instrObj.rs2 = None
+            return instrObj
+
+        # fclass.h, fmv.x.h
+        if funct7 == 0b1110010:
+            if rm == 0b001:
+                instrObj.instr_name = 'fclass.h'
+                instrObj.rd = (rd[0], 'x')
+                instrObj.rs2 = None
+                return instrObj
+            elif rm == 0b000:
+                instrObj.instr_name = 'fmv.x.h'
+                instrObj.rd = (rd[0], 'x')
+                instrObj.rs2 = None
+                return instrObj
 
     ''' Compressed Instruction Parsing Functions '''
     C_FUNCT3_MASK = 0xe000
