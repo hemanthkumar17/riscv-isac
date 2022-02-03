@@ -23,7 +23,7 @@ import multiprocessing as mp
 from collections.abc import MutableMapping
 
 
-unsgn_rs1 = ['sw','sd','sh','sb','ld','lw','lwu','lh','lhu','lb', 'lbu','flw','fld','fsw','fsd',\
+unsgn_rs1 = ['sw','sd','sh','sb','ld','lw','lwu','lh','lhu','lb', 'lbu', 'flh','flw','fld', 'fsh','fsw','fsd',\
         'bgeu', 'bltu', 'sltiu', 'sltu','c.lw','c.ld','c.lwsp','c.ldsp',\
         'c.sw','c.sd','c.swsp','c.sdsp','mulhu','divu','remu','divuw',\
         'remuw','aes64ds','aes64dsm','aes64es','aes64esm','aes64ks2',\
@@ -41,11 +41,15 @@ unsgn_rs2 = ['bgeu', 'bltu', 'sltiu', 'sltu', 'sll', 'srl', 'sra','mulhu',\
         'xperm.n','xperm.b', 'aes32esmi', 'aes32esi', 'aes32dsmi', 'aes32dsi',\
         'sha512sum1r','sha512sum0r','sha512sig1l','sha512sig1h','sha512sig0l','sha512sig0h','fsw']
 
+one_operand_hinstructions = ["fsqrt.h","fclass.h","fcvt.w.h","fcvt.wu.h","fcvt.h.w","fcvt.h.wu","fcvt.l.h","fcvt.lu.h","fcvt.h.l","fcvt.h.lu","fmv.x.h","fmv.h.x","fcvt.s.h","fcvt.h.s"]
+two_operand_hinstructions = ["fadd.h","fsub.h","fmul.h","fdiv.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fsgnj.h","fsgnjn.h","fsgnjx.h"]
+three_operand_hinstructions = ["fmadd.h","fmsub.h","fnmadd.h","fnmsub.h"]
+
 one_operand_finstructions = ["fsqrt.s","fmv.x.w","fcvt.wu.s","fcvt.w.s","fclass.s","fcvt.l.s","fcvt.lu.s","fcvt.s.l","fcvt.s.lu","fcvt.s.w","fcvt.s.wu","fmv.w.x"]
 two_operand_finstructions = ["fadd.s","fsub.s","fmul.s","fdiv.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s"]
 three_operand_finstructions = ["fmadd.s","fmsub.s","fnmadd.s","fnmsub.s"]
 
-one_operand_dinstructions = ["fsqrt.d","fclass.d","fcvt.w.d","fcvt.wu.d","fcvt.d.w","fcvt.d.wu","fcvt.l.d","fcvt.lu.d","fcvt.d.l","fcvt.d.lu","fmv.x.d","fmv.d.x","fcvt.s.d","fcvt.d.s"]
+one_operand_dinstructions = ["fsqrt.d","fclass.d","fcvt.w.d","fcvt.wu.d","fcvt.d.w","fcvt.d.wu","fcvt.l.d","fcvt.lu.d","fcvt.d.l","fcvt.d.lu","fmv.x.d","fmv.d.x","fcvt.s.d","fcvt.d.s", "fcvt.h.d", "fcvt.d.h"]
 two_operand_dinstructions = ["fadd.d","fsub.d","fmul.d","fdiv.d","fmax.d","fmin.d","feq.d","flt.d","fle.d","fsgnj.d","fsgnjn.d","fsgnjx.d"]
 three_operand_dinstructions = ["fmadd.d","fmsub.d","fnmadd.d","fnmsub.d"]
 
@@ -210,7 +214,10 @@ class archState:
         else:
             self.x_rf = ['0000000000000000']*32
 
-        if flen == 32:
+        if flen == 16:
+            self.f_rf = ['0000']*32
+            self.fcsr = 0
+        elif flen == 32:
             self.f_rf = ['00000000']*32
             self.fcsr = 0
         else:
@@ -487,7 +494,8 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
     elif rs1_type == 'f':
         rs1_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.f_rf[rs1]))[0]
         if instr.instr_name in one_operand_finstructions + two_operand_finstructions + three_operand_finstructions\
-     + one_operand_dinstructions + two_operand_dinstructions + three_operand_dinstructions:
+        + one_operand_dinstructions + two_operand_dinstructions + three_operand_dinstructions\
+        + one_operand_hinstructions + two_operand_hinstructions + three_operand_hinstructions:
             rs1_val = '0x' + (arch_state.f_rf[rs1]).lower()
 
     if instr.instr_name in unsgn_rs2:
@@ -496,23 +504,24 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
         rs2_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.x_rf[rs2]))[0]
     elif rs2_type == 'f':
         rs2_val = struct.unpack(sgn_sz, bytes.fromhex(arch_state.f_rf[rs2]))[0]
-        if instr.instr_name in two_operand_finstructions + two_operand_dinstructions + three_operand_finstructions\
-        + three_operand_dinstructions:
+        if instr.instr_name in two_operand_finstructions + two_operand_dinstructions + two_operand_hinstructions\
+        + three_operand_finstructions + three_operand_dinstructions + three_operand_hinstructions:
             rs2_val = '0x' + (arch_state.f_rf[rs2]).lower()
 
-    if instr.instr_name in three_operand_finstructions + three_operand_dinstructions:
+    if instr.instr_name in three_operand_finstructions + three_operand_dinstructions + three_operand_hinstructions:
         rs3_val = '0x' + (arch_state.f_rf[rs3]).lower()
 
     if instr.instr_name in ['csrrwi']:
         arch_state.fcsr = instr.zimm
 
     if instr.instr_name in one_operand_finstructions + two_operand_finstructions + three_operand_finstructions\
-     + one_operand_dinstructions + two_operand_dinstructions + three_operand_dinstructions:
-         rm = instr.rm
-         if(rm==7 or rm==None):
-              rm_val = arch_state.fcsr
-         else:
-              rm_val = rm
+        + one_operand_dinstructions + two_operand_dinstructions + three_operand_dinstructions\
+        + one_operand_hinstructions + two_operand_hinstructions + three_operand_hinstructions:
+        rm = instr.rm
+        if(rm==7 or rm==None):
+            rm_val = arch_state.fcsr
+        else:
+            rm_val = rm
 
     arch_state.pc = instr.instr_addr
 
@@ -524,7 +533,7 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
     if instr.instr_name == "jalr":
         ea_align = (rs1_val + imm_val) % 4
 
-    if instr.instr_name in ['sw','sh','sb','lw','lhu','lh','lb','lbu','lwu','flw','fsw']:
+    if instr.instr_name in ['sw','sh','sb','lw','lhu','lh','lb','lbu','lwu','flw','fsw', 'fsh', 'flh']:
         ea_align = (rs1_val + imm_val) % 4
     if instr.instr_name in ['ld','sd','fld','fsd']:
         ea_align = (rs1_val + imm_val) % 8
@@ -703,6 +712,81 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                             stats.ucovpt.append(str(val_key[0]))
                                         stats.covpt.append(str(val_key[0]))
                                         cgf[cov_labels]['val_comb'][val_key[0]] += 1
+                            elif instr.instr_name in two_operand_hinstructions:
+                                    if xlen == 64:
+                                        rs1_val = "0x" + rs1_val[14:]
+                                        rs2_val = "0x" + rs2_val[14:]
+                                    elif xlen == 32:
+                                        rs1_val = "0x" + rs1_val[6:]
+                                        rs2_val = "0x" + rs2_val[6:]
+                                    logger.info("+"*20)
+                                    logger.info(instr.instr_name)
+                                    logger.info(rs1_val)
+                                    val_key = fmt.extract_fields(16, rs1_val, str(1))
+                                    val_key+= " and "
+                                    logger.info(rs2_val)
+                                    val_key+= fmt.extract_fields(16, rs2_val, str(2))
+                                    val_key+= " and "
+                                    val_key+= 'rm_val == '+ str(rm_val)
+                                    val_key+= '  #nosat'
+                                    l=[0]
+                                    l[0] = val_key
+                                    val_key = l
+                                    logger.info(val_key)
+                                    logger.info(val_key[0] in cgf[cov_labels]['val_comb'])
+                                    logger.info(cgf[cov_labels]['val_comb'])
+                                    # logger.info(cgf[cov_labels]['val_comb'])
+                                    if(val_key[0] in cgf[cov_labels]['val_comb']):
+                                        if cgf[cov_labels]['val_comb'][val_key[0]] == 0:
+                                            stats.ucovpt.append(str(val_key[0]))
+                                        stats.covpt.append(str(val_key[0]))
+                                        cgf[cov_labels]['val_comb'][val_key[0]] += 1
+                            elif instr.instr_name in one_operand_hinstructions:
+                                    if instr.instr_name not in ["fcvt.h.l","fcvt.h.lu","fcvt.h.w","fcvt.h.wu","fmv.h.x"]:
+                                        if xlen == 64:
+                                            rs1_val = "0x" + rs1_val[14:]
+                                        elif xlen == 32:
+                                            rs1_val = "0x" + rs1_val[6:]
+                                    if instr.instr_name not in ["fcvt.h.l","fcvt.h.lu","fcvt.h.w","fcvt.h.wu","fmv.h.x"]:
+                                        val_key = fmt.extract_fields(16, rs1_val, str(1))
+                                    else:
+                                        val_key = "rs1_val == "+ str(rs1_val)
+                                    val_key+= " and "
+                                    val_key+= 'rm_val == '+ str(rm_val)
+                                    val_key+= '  #nosat'
+                                    l=[0]
+                                    l[0] = val_key
+                                    val_key = l
+                                    if(val_key[0] in cgf[cov_labels]['val_comb']):
+                                        if cgf[cov_labels]['val_comb'][val_key[0]] == 0:
+                                            stats.ucovpt.append(str(val_key[0]))
+                                        stats.covpt.append(str(val_key[0]))
+                                        cgf[cov_labels]['val_comb'][val_key[0]] += 1
+                            elif instr.instr_name in three_operand_hinstructions:
+                                    if xlen == 64:
+                                        rs1_val = "0x" + rs1_val[14:]
+                                        rs2_val = "0x" + rs2_val[14:]
+                                        rs3_val = "0x" + rs3_val[14:]
+                                    elif xlen == 32:
+                                        rs1_val = "0x" + rs1_val[6:]
+                                        rs2_val = "0x" + rs2_val[6:]
+                                        rs3_val = "0x" + rs3_val[6:]
+                                    val_key = fmt.extract_fields(16, rs1_val, str(1))
+                                    val_key+= " and "
+                                    val_key+= fmt.extract_fields(16, rs2_val, str(2))
+                                    val_key+= " and "
+                                    val_key+= fmt.extract_fields(16, rs3_val, str(3))
+                                    val_key+= " and "
+                                    val_key+= 'rm_val == '+ str(rm_val)
+                                    val_key+= '  #nosat'
+                                    l=[0]
+                                    l[0] = val_key
+                                    val_key = l
+                                    if(val_key[0] in cgf[cov_labels]['val_comb']):
+                                        if cgf[cov_labels]['val_comb'][val_key[0]] == 0:
+                                            stats.ucovpt.append(str(val_key[0]))
+                                        stats.covpt.append(str(val_key[0]))
+                                        cgf[cov_labels]['val_comb'][val_key[0]] += 1
                             else:
                                 for coverpoints in value['val_comb']:
                                     if type(rs1_val) is str:
@@ -863,6 +947,10 @@ def compute(trace_file, test_name, cgf, parser_name, decoder_name, detailed, xle
         if instr is None:
             continue
         instrObj = (decoder.decode(instrObj_temp = instrObj_temp))[0]
+        # logger.info("+"*20)
+        # # logger.info(instrObj_temp)
+        # logger.info(instrObj)
+        # logger.info(list(enumerate(arch_state.f_rf)))
         logger.debug(instrObj)
         rcgf = compute_per_line(instrObj, cgf, xlen,
                         addr_pairs, sig_addrs)
