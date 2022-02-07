@@ -234,8 +234,6 @@ class csr_registers(MutableMapping):
             self.csr_regs["mhpmevent"+str(i)] = int('323',16) + (i-3)
 
     def __setitem__ (self,key,value):
-        logger.info(key)
-        logger.info(value)
         if(isinstance(key, str)):
             self.csr[self.csr_regs[key]] = value
         else:
@@ -289,7 +287,7 @@ class archState:
         if flen == 16:
             self.f_rf = ['0000']*32
             self.fcsr = 0
-        if flen == 32:
+        elif flen == 32:
             self.f_rf = ['00000000']*32
             self.fcsr = 0
         else:
@@ -741,6 +739,9 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                     cgf[cov_labels]['op_comb'][coverpoints] += 1
                         if 'val_comb' in value and len(value['val_comb']) != 0:
                             if instr.instr_name in ['fadd.s',"fsub.s","fmul.s","fdiv.s","fmax.s","fmin.s","feq.s","flt.s","fle.s","fsgnj.s","fsgnjn.s","fsgnjx.s"]:
+                                if xlen == 64:
+                                    rs1_val = rs1_val[8:]
+                                    rs2_val = rs2_val[8:]
                                     val_key = fmt.extract_fields(32, rs1_val, str(1))
                                     val_key+= " and "
                                     val_key+= fmt.extract_fields(32, rs2_val, str(2))
@@ -767,6 +768,10 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                         stats.covpt.append(str(val_key[0]))
                                         cgf[cov_labels]['val_comb'][val_key[0]] += 1
                             elif instr.instr_name in ["fmadd.s","fmsub.s","fnmadd.s","fnmsub.s"]:
+                                    if xlen == 64:
+                                        rs1_val = rs1_val[8:]
+                                        rs2_val = rs2_val[8:]
+                                        rs3_val = rs3_val[8:]
                                     val_key = fmt.extract_fields(32, rs1_val, str(1))
                                     val_key+= " and "
                                     val_key+= fmt.extract_fields(32, rs2_val, str(2))
@@ -783,11 +788,12 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                         stats.covpt.append(str(val_key[0]))
                                         cgf[cov_labels]['val_comb'][val_key[0]] += 1
                             elif instr.instr_name in ['fadd.h',"fsub.h","fmul.h","fdiv.h","fmax.h","fmin.h","feq.h","flt.h","fle.h","fsgnj.h","fsgnjn.h","fsgnjx.h"]:
-                                    logger.info("RS1, RS2")
-                                    logger.info(rs1_val)
-                                    logger.info(rs2_val)
-                                    logger.info(type(rs1_val))
-                                    logger.info(type(rs2_val))
+                                    if xlen == 64:
+                                        rs1_val = "0x" + rs1_val[14:]
+                                        rs2_val = "0x" + rs2_val[14:]
+                                    elif xlen == 32:
+                                        rs1_val = "0x" + rs1_val[6:]
+                                        rs2_val = "0x" + rs2_val[6:]
                                     val_key = fmt.extract_fields(16, rs1_val, str(1))
                                     val_key+= " and "
                                     val_key+= fmt.extract_fields(16, rs2_val, str(2))
@@ -802,6 +808,10 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                         stats.covpt.append(str(val_key[0]))
                                         cgf[cov_labels]['val_comb'][val_key[0]] += 1
                             elif instr.instr_name in ["fsqrt.h","fmv.x.h","fmv.h.x","fcvt.wu.h","fcvt.h.wu","fcvt.w.h","fcvt.h.w","fcvt.s.h","fcvt.h.s","fclass.h"]:
+                                    if xlen == 64:
+                                            rs1_val = "0x" + rs1_val[14:]
+                                    elif xlen == 32:
+                                        rs1_val = "0x" + rs1_val[6:]
                                     val_key = fmt.extract_fields(16, rs1_val, str(1))
                                     val_key+= " and "
                                     val_key+= 'rm == '+ str(rm_val)
@@ -814,6 +824,14 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                         stats.covpt.append(str(val_key[0]))
                                         cgf[cov_labels]['val_comb'][val_key[0]] += 1
                             elif instr.instr_name in ["fmadd.h","fmsub.h","fnmadd.h","fnmsub.h"]:
+                                    if xlen == 64:
+                                        rs1_val = "0x" + rs1_val[14:]
+                                        rs2_val = "0x" + rs2_val[14:]
+                                        rs3_val = "0x" + rs3_val[14:]
+                                    elif xlen == 32:
+                                        rs1_val = "0x" + rs1_val[6:]
+                                        rs2_val = "0x" + rs2_val[6:]
+                                        rs3_val = "0x" + rs3_val[6:]
                                     val_key = fmt.extract_fields(16, rs1_val, str(1))
                                     val_key+= " and "
                                     val_key+= fmt.extract_fields(16, rs2_val, str(2))
@@ -925,15 +943,12 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
             arch_state.x_rf[int(commitvalue[1])] =  str(commitvalue[2][2:])
         elif rd_type == 'f':
             arch_state.f_rf[int(commitvalue[1])] =  str(commitvalue[2][2:])
-    logger.info(rd_type)
-    logger.info(arch_state.f_rf)
-    logger.info(arch_state.fcsr)
-    logger.info("_-"*15)
-    # csr_commit = instr.csr_commit
-    # if csr_commit is not None:
-    #     for commits in csr_commit:
-    #         if(commits[0]=="CSR"):
-    #             csr_regfile[commits[1]] = str(commits[2][2:])
+
+    csr_commit = instr.csr_commit
+    if csr_commit is not None:
+        for commits in csr_commit:
+            if(commits[0]=="CSR"):
+                csr_regfile[commits[1]] = str(commits[2][2:])
 
 
     return cgf
@@ -1011,8 +1026,6 @@ def compute(trace_file, test_name, cgf, parser_name, decoder_name, detailed, xle
         if instr is None:
             continue
         instrObj = (decoder.decode(instrObj_temp = instrObj_temp))[0]
-        logger.info(instrObj)
-        logger.info(".'"*20)
         cross_cover_queue.append(instrObj)
         if(len(cross_cover_queue)>=window_size):
             for (label,coverpt) in obj_dict.keys():

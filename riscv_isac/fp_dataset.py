@@ -126,8 +126,8 @@ def extract_fields(flen, hexstr, postfix):
 	man = bin_val[e_sz+1:]
 	if flen == 16:
 		string = 'fs'+postfix+' == '+str(sgn) +\
-				' and fe'+postfix+' == '+'0x'+str(hex(int('10'+exp,2))[3:]) +\
-				' and fm'+postfix+' == '+'0x'+str(hex(int('1'+man,2))[3:])
+				' and fe'+postfix+' == '+'0x'+str(hex(int('1000'+exp,2))[3:]) +\
+				' and fm'+postfix+' == '+'0x'+str(hex(int('100'+man,2))[3:])
 	elif flen == 32:
 		string = 'fs'+postfix+' == '+str(sgn) +\
 				' and fe'+postfix+' == '+'0x'+str(hex(int('1'+exp,2))[3:]) +\
@@ -136,7 +136,6 @@ def extract_fields(flen, hexstr, postfix):
 		string = 'fs'+postfix+' == '+str(sgn) +\
 				' and fe'+postfix+' == '+'0x'+str(hex(int('10'+exp,2))[3:]) +\
 				' and fm'+postfix+' == '+'0x'+str(hex(int('1'+man,2))[3:])
-
 	return string
 
 def fields_dec_converter(flen, hexstr):							# IEEE-754 Hex -> Decimal Converter
@@ -357,7 +356,7 @@ def ibm_b1(flen, opcode, ops):
 		- The operand values are then passed into the extract_fields function to get individual fields in a floating point number (sign, exponent and mantissa).
 		- Coverpoints are then appended with the respective rounding mode for that particular opcode.
 
-	'''
+	''' 
 	if flen == 16:
 		basic_types = hzero + hminsubnorm + [hsubnorm[0], hsubnorm[3]] +\
 			hmaxsubnorm + hminnorm + [hnorm[0], hnorm[3]] + hmaxnorm + \
@@ -404,7 +403,6 @@ def ibm_b1(flen, opcode, ops):
 	(str(16) if flen == 16 else str(32) if flen == 32 else str(64)) + '-bit coverpoints using Model B1 for '+opcode+' !'
 	logger.debug(mess)
 	coverpoints = comments_parser(coverpoints)
-
 	return coverpoints
 
 def ibm_b2(flen, opcode, ops, int_val = 100, seed = -1):
@@ -4506,7 +4504,9 @@ def ibm_b25(flen, opcode, ops, seed=10):
 
 	dataset = [(0,"0"),(1,"1"),(-1,"-1")]
 
-	if flen == 32:
+	if flen == 16:
+		maxnum = 2**15-1
+	elif flen == 32:
 		maxnum = 2**31-1
 	elif flen == 64:
 		maxnum = 2**63-1
