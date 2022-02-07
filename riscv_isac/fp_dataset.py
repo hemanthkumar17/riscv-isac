@@ -136,11 +136,6 @@ def extract_fields(flen, hexstr, postfix):
 		string = 'fs'+postfix+' == '+str(sgn) +\
 				' and fe'+postfix+' == '+'0x'+str(hex(int('10'+exp,2))[3:]) +\
 				' and fm'+postfix+' == '+'0x'+str(hex(int('1'+man,2))[3:])
-	logger.info("*"*20)
-	logger.info(hexstr)
-	logger.info(exp)
-	logger.info(man)
-	logger.info(string)
 	return string
 
 def fields_dec_converter(flen, hexstr):							# IEEE-754 Hex -> Decimal Converter
@@ -406,11 +401,6 @@ def ibm_b1(flen, opcode, ops):
 	mess='Generated'+ (' '*(5-len(str(len(coverpoints)))))+ str(len(coverpoints)) +' '+ \
 	(str(16) if flen == 16 else str(32) if flen == 32 else str(64)) + '-bit coverpoints using Model B1 for '+opcode+' !'
 	coverpoints = comments_parser(coverpoints)
-	logger.info("Dataset")
-	logger.info("-"*20)
-	logger.info(coverpoints)
-	logger.info("-"*20)
-	logger.info("End Set")
 	return coverpoints
 
 def ibm_b2(flen, opcode, ops, int_val = 100, seed = -1):
@@ -4512,7 +4502,9 @@ def ibm_b25(flen, opcode, ops, seed=10):
 
 	dataset = [(0,"0"),(1,"1"),(-1,"-1")]
 
-	if flen == 32:
+	if flen == 16:
+		maxnum = 2**15-1
+	elif flen == 32:
 		maxnum = 2**31-1
 	elif flen == 64:
 		maxnum = 2**63-1

@@ -719,12 +719,8 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                     elif xlen == 32:
                                         rs1_val = "0x" + rs1_val[6:]
                                         rs2_val = "0x" + rs2_val[6:]
-                                    logger.info("+"*20)
-                                    logger.info(instr.instr_name)
-                                    logger.info(rs1_val)
                                     val_key = fmt.extract_fields(16, rs1_val, str(1))
                                     val_key+= " and "
-                                    logger.info(rs2_val)
                                     val_key+= fmt.extract_fields(16, rs2_val, str(2))
                                     val_key+= " and "
                                     val_key+= 'rm_val == '+ str(rm_val)
@@ -732,9 +728,6 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                     l=[0]
                                     l[0] = val_key
                                     val_key = l
-                                    logger.info(val_key)
-                                    logger.info(val_key[0] in cgf[cov_labels]['val_comb'])
-                                    logger.info(cgf[cov_labels]['val_comb'])
                                     # logger.info(cgf[cov_labels]['val_comb'])
                                     if(val_key[0] in cgf[cov_labels]['val_comb']):
                                         if cgf[cov_labels]['val_comb'][val_key[0]] == 0:
