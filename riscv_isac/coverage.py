@@ -218,7 +218,9 @@ class csr_registers(MutableMapping):
             "scause": int('142',16),
             "stval": int('143',16),
             "sip": int('144',16),
-            "satp": int('180',16)
+            "satp": int('180',16),
+            "fflags":int('1',16),
+            "frm":int("2",16)
         }
         for i in range(16):
             self.csr_regs["pmpaddr"+str(i)] = int('3B0',16)+i
