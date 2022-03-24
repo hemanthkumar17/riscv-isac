@@ -622,7 +622,7 @@ def ibm_b3(flen, opcode, ops, seed=-1):
 		maxnum = float.fromhex(ieee754_maxnorm)
 		ieee754_num = []
 		lsb = []
-		for i in fsubnorm+fnorm:
+		for i in hsubnorm+hnorm:
 			if int(i[-1],16)%2 == 1:
 				lsb.append('1')
 				lsb.append('1')
@@ -1872,7 +1872,7 @@ def ibm_b9(flen, opcode, ops):
 	'''
 	opcode = opcode.split('.')[0]
 
-	if flen == 32:
+	if flen == 16:
 		flip_types = hzero + hone + hminsubnorm + hmaxsubnorm + hminnorm + hmaxnorm
 		e_sz=5
 	elif flen == 32:
@@ -2100,8 +2100,8 @@ def ibm_b10(flen, opcode, ops, N=-1, seed=-1):
 	b10_comb = []
 	comment = []
 	for i in range(1,N):
-		rs1 = random.uniform(1,maxnum/1000)
-		rs2 = random.uniform(1,maxnum/1000)
+		rs1 = "{:e}".format(random.uniform(1,maxnum/1000))
+		rs2 = "{:e}".format(random.uniform(1,maxnum/1000))
 		rs1_exp = str(rs1).split('e')[1]
 
 		rs2_exp = -1*random.randrange(int(math.log(pow(10,int(rs1_exp)),2))+4, exp_max)
@@ -2142,7 +2142,6 @@ def ibm_b10(flen, opcode, ops, N=-1, seed=-1):
 	(str(16) if flen == 16 else str(32) if flen == 32 else str(64)) + '-bit coverpoints using Model B10 for '+opcode+' !'
 	logger.debug(mess)
 	coverpoints = comments_parser(coverpoints)
-
 	return coverpoints
 
 def ibm_b11(flen, opcode, ops, N=-1, seed=-1):
@@ -2179,8 +2178,8 @@ def ibm_b11(flen, opcode, ops, N=-1, seed=-1):
 
 	if flen == 16:
 		flip_types = hzero + hone + hminsubnorm + hmaxsubnorm + hminnorm + hmaxnorm
-		e_sz=8
-		exp_max = 255
+		e_sz=5
+		exp_max = 31
 	elif flen == 32:
 		flip_types = fzero + fone + fminsubnorm + fmaxsubnorm + fminnorm + fmaxnorm
 		e_sz=8
@@ -2189,7 +2188,6 @@ def ibm_b11(flen, opcode, ops, N=-1, seed=-1):
 		flip_types = dzero + done + dminsubnorm + dmaxsubnorm + dminnorm + dmaxnorm
 		e_sz=11
 		exp_max = 1023
-
 	if seed == -1:
 		if opcode in 'fadd':
 			random.seed(0)
@@ -2214,7 +2212,8 @@ def ibm_b11(flen, opcode, ops, N=-1, seed=-1):
 			else : rs2_exp = random.randrange(-127,int(rs1_exp,2)-131)
 			comment_str = ' | Exponent = '+ str(rs2_exp) + ' --> A value smaller than (p - 4)'
 			rs2_exp += 127
-			if flen == 32: rs2_exp = '{:08b}'.format(rs2_exp)
+			if flen == 16: rs2_exp = '{:05b}'.format(rs2_exp)
+			elif flen == 32: rs2_exp = '{:08b}'.format(rs2_exp)
 			elif flen == 64: rs2_exp = '{:011b}'.format(rs2_exp)
 			for j in range(len(rs1_man)):
 				rs2_sgn = rs1_sgn
@@ -2281,7 +2280,8 @@ def ibm_b11(flen, opcode, ops, N=-1, seed=-1):
 			else : rs2_exp = random.randrange(int(rs1_exp,2)-123,127)
 			comment_str = ' | Exponent = '+ str(rs2_exp) + ' --> A value greater than (p + 4)'
 			rs2_exp += 127
-			if flen == 32: rs2_exp = '{:08b}'.format(rs2_exp)
+			if flen == 16: rs2_exp = '{:05b}'.format(rs2_exp)
+			elif flen == 32: rs2_exp = '{:08b}'.format(rs2_exp)
 			elif flen == 64: rs2_exp = '{:011b}'.format(rs2_exp)
 			for j in range(len(rs1_man)):
 				rs2_sgn = rs1_sgn
@@ -2352,7 +2352,8 @@ def ibm_b11(flen, opcode, ops, N=-1, seed=-1):
 				rs2_exp = expval
 				comment_str = ' | Exponent = '+ str(rs2_exp) + ' --> Values in the range (p - 4) to (p + 4)'
 				rs2_exp += 127
-				if flen == 32: rs2_exp = '{:08b}'.format(rs2_exp)
+				if flen == 16: rs2_exp = '{:05b}'.format(rs2_exp)
+				elif flen == 32: rs2_exp = '{:08b}'.format(rs2_exp)
 				elif flen == 64: rs2_exp = '{:011b}'.format(rs2_exp)
 				for j in range(len(rs1_man)):
 					rs2_sgn = rs1_sgn
@@ -2512,12 +2513,12 @@ def ibm_b12(flen, opcode, ops, seed=-1):
 		elif opcode in 'fsub': rs1 = random.uniform(minsubnorm,maxnum)
 		ir = random.uniform(1,maxnum)
 		if opcode in 'fadd':
-			if flen == 32:
+			if flen == 16 or flen == 32:
 				rs2 = ir - rs1
 			elif flen == 64:
 				rs2 = Decimal(ir) - Decimal(rs1)
 		elif opcode in 'fsub':
-			if flen == 32:
+			if flen == 16 or flen == 32:
 				rs2 = rs1 - ir
 			elif flen == 64:
 				rs2 = Decimal(rs1) - Decimal(ir)
@@ -2528,15 +2529,12 @@ def ibm_b12(flen, opcode, ops, seed=-1):
 			else rsx
 			x1 = m(rs1)
 			x2 = m(rs2)
-			x3 = m(rs3)
 		elif(flen==32):
 			x1 = struct.unpack('f', struct.pack('f', rs1))[0]
 			x2 = struct.unpack('f', struct.pack('f', rs2))[0]
-			x3 = struct.unpack('f', struct.pack('f', rs3))[0]
 		elif(flen==64):
 			x1 = rs1
 			x2 = rs2
-			x3 = rs3
 
 		if opcode in ['fadd','fsub']:
 			b12_comb.append((floatingPoint_tohex(flen,float(rs1)),floatingPoint_tohex(flen,float(rs2))))
@@ -2649,15 +2647,12 @@ def ibm_b13(flen, opcode, ops, seed=-1):
 			else rsx
 			x1 = m(rs1)
 			x2 = m(rs2)
-			x3 = m(rs3)
 		elif(flen==32):
 			x1 = struct.unpack('f', struct.pack('f', rs1))[0]
 			x2 = struct.unpack('f', struct.pack('f', rs2))[0]
-			x3 = struct.unpack('f', struct.pack('f', rs3))[0]
 		elif(flen==64):
 			x1 = rs1
 			x2 = rs2
-			x3 = rs3
 
 		if opcode in ['fadd','fsub']:
 			b13_comb.append((floatingPoint_tohex(flen,float(rs1)),floatingPoint_tohex(flen,float(rs2))))
@@ -2769,7 +2764,7 @@ def ibm_b14(flen, opcode, ops, N=-1, seed=-1):
 		rs1 = random.uniform(1,limnum)
 		rs2 = random.uniform(1,limnum)
 		rs3 = random.uniform(1,limnum)
-		mul_exp = int(str(rs1*rs2).split('e')[1])
+		mul_exp = int(str("{:e}".format(rs1*rs2)).split('e')[1])
 		mul_exp = int(math.log(pow(2,int(mul_exp)),10))
 
 		if mul_exp-((2*mant_bits)+1) > -1*exp_max:
@@ -2906,7 +2901,12 @@ def ibm_b15(flen, opcode, ops, N=-1, seed=-1):
 			rs1_exp = bin_val[1:e_sz+1]
 			rs1_man = bin_val[e_sz+1:]
 
-			if flen == 32:
+			if flen == 16:
+				if int(rs1_exp,2) < 33: rs2_exp = 0
+				else : rs2_exp = random.randrange(0,int(rs1_exp,2)-33)
+				comment_str = ' | Exponent = '+ str(rs2_exp-15) + ' --> Difference smaller than -(2p + 1)'
+				rs2_exp = '{:05b}'.format(rs2_exp)
+			elif flen == 32:
 				if int(rs1_exp,2) < 65: rs2_exp = 0
 				else : rs2_exp = random.randrange(0,int(rs1_exp,2)-65)
 				comment_str = ' | Exponent = '+ str(rs2_exp-127) + ' --> Difference smaller than -(2p + 1)'
@@ -2966,7 +2966,12 @@ def ibm_b15(flen, opcode, ops, N=-1, seed=-1):
 				b15_comb.append((floatingPoint_tohex(flen,float(rs1_act)),floatingPoint_tohex(flen,float(rs2_act)),floatingPoint_tohex(flen,float(rs2))))
 				comment.append(comment_str + ' | Checkerboard pattern ---> rs3_man = '+rs2_man)
 
-			if flen == 32:
+			if flen == 16:
+				if int(rs1_exp,2) > 14: rs2_exp = 31
+				else : rs2_exp = random.randrange(int(rs1_exp,2)+17, 31)
+				comment_str = ' | Exponent = '+ str(rs2_exp-127) + ' --> Difference greater than (p + 1)'
+				rs2_exp = '{:05b}'.format(rs2_exp)
+			elif flen == 32:
 				if int(rs1_exp,2) > 222: rs2_exp = 255
 				else : rs2_exp = random.randrange(int(rs1_exp,2)+33, 255)
 				comment_str = ' | Exponent = '+ str(rs2_exp-127) + ' --> Difference greater than (p + 1)'
@@ -3026,7 +3031,12 @@ def ibm_b15(flen, opcode, ops, N=-1, seed=-1):
 				b15_comb.append((floatingPoint_tohex(flen,float(rs1_act)),floatingPoint_tohex(flen,float(rs2_act)),floatingPoint_tohex(flen,float(rs2))))
 				comment.append(comment_str + ' | Checkerboard pattern ---> rs3_man = '+rs2_man)
 
-			if flen == 32:
+			if flen == 16:
+				ul = int(rs1_exp,2)+17
+				ll = int(rs1_exp,2)-33
+				if int(rs1_exp,2) >= 14: ul = 31
+				if int(rs1_exp,2) < 33: ll = 0
+			elif flen == 32:
 				ul = int(rs1_exp,2)+33
 				ll = int(rs1_exp,2)-65
 				if int(rs1_exp,2) >= 222: ul = 255
@@ -3038,7 +3048,10 @@ def ibm_b15(flen, opcode, ops, N=-1, seed=-1):
 				if int(rs1_exp,2) < 129: ll = 0
 			for expval in range (ll, ul):
 				rs2_exp = expval
-				if flen == 32:
+				if flen == 16:
+					comment_str = ' | Exponent = '+ str(rs2_exp-15) + ' --> Difference between -(2p+1) and (p+1)'
+					rs2_exp = '{:05b}'.format(rs2_exp)
+				elif flen == 32:
 					comment_str = ' | Exponent = '+ str(rs2_exp-127) + ' --> Difference between -(2p+1) and (p+1)'
 					rs2_exp = '{:08b}'.format(rs2_exp)
 				elif flen == 64:
@@ -3605,11 +3618,8 @@ def ibm_b18(flen, opcode, ops, seed=-1):
 		ir_dataset = []
 		for i in range(2,16,2):
 			grs = '{:04b}'.format(i)
-			ir_dataset.append([ieee754_maxnorm_p.split('p')[0]+str(i)+'p'+ieee754_maxnorm_p.split('p')[1],' | Guard = '+grs[0]+' Round = '+grs[1]+' Sticky = '+grs[2]+' --> Maxnorm + '+str(int(grs[0:3],2))+' ulp'])
-			ir_dataset.append([ieee754_maxnorm_n.split('p')[0]+str(i)+'p'+ieee754_maxnorm_n.split('p')[1],' | Guard = '+grs[0]+' Round = '+grs[1]+' Sticky = '+grs[2]+' --> Maxnorm - '+str(int(grs[0:3],2))+' ulp'])
-		for i in range(-3,4):
-			ir_dataset.append([ieee754_maxnorm_p.split('p')[0]+'p'+str(15+i),' | Exponent = '+str(15+i)+' Number = +ve'])
-			ir_dataset.append([ieee754_maxnorm_n.split('p')[0]+'p'+str(15+i),' | Exponent = '+str(15+i)+' Number = -ve'])
+			ir_dataset.append([ieee754_maxnorm_p.split('p')[0]+str(i)+'p'+ieee754_maxnorm_p.split('p')[1],' | Guard = '+grs[0]+' Round = '+grs[1]+' Sticky = '+grs[2]+' --> Maxnorm + '+str(int(grs[0:3],2))+' ulp' + ': Multiply add - Overflow Cancellation'])
+			ir_dataset.append([ieee754_maxnorm_n.split('p')[0]+str(i)+'p'+ieee754_maxnorm_n.split('p')[1],' | Guard = '+grs[0]+' Round = '+grs[1]+' Sticky = '+grs[2]+' --> Maxnorm - '+str(int(grs[0:3],2))+' ulp' + ': Multiply add - Overflow Cancellation'])
 		for i in range(len(ir_dataset)):
 			ir_dataset[i][0] = float.fromhex(ir_dataset[i][0])
 	elif flen == 32:
@@ -3694,11 +3704,11 @@ def ibm_b18(flen, opcode, ops, seed=-1):
 		ir_dataset = []
 		for i in range(0,16,2):
 			grs = '{:04b}'.format(i)
-			ir_dataset.append([ieee754_minsubnorm.split('p')[0]+str(i)+'p'+ieee754_minsubnorm.split('p')[1],' | Guard = '+grs[0]+' Round = '+grs[1]+' Sticky = '+grs[2]+' --> Minsubnorm + '+str(int(grs[0:3],2))+' ulp'])
+			ir_dataset.append([ieee754_minsubnorm.split('p')[0]+str(i)+'p'+ieee754_minsubnorm.split('p')[1],' | Guard = '+grs[0]+' Round = '+grs[1]+' Sticky = '+grs[2]+' --> Minsubnorm + '+str(int(grs[0:3],2))+' ulp' + ': Multiply add - Underflow Cancellation'])
 		ieee754_minnorm = '0x1.000000p-14'
 		for i in range(0,16,2):
 			grs = '{:04b}'.format(i)
-			ir_dataset.append([ieee754_minnorm.split('p')[0]+str(i)+'p'+ieee754_minnorm.split('p')[1],' | Guard = '+grs[0]+' Round = '+grs[1]+' Sticky = '+grs[2]+' --> Minnorm + '+str(int(grs[0:3],2))+' ulp'])
+			ir_dataset.append([ieee754_minnorm.split('p')[0]+str(i)+'p'+ieee754_minnorm.split('p')[1],' | Guard = '+grs[0]+' Round = '+grs[1]+' Sticky = '+grs[2]+' --> Minnorm + '+str(int(grs[0:3],2))+' ulp' +  ': Multiply add - Underflow Cancellation'])
 		n = len(ir_dataset)
 		for i in range(n):
 			ir_dataset[i][0] = float.fromhex(ir_dataset[i][0])
@@ -3914,14 +3924,14 @@ def ibm_b19(flen, opcode, ops, seed=-1):
 	for i in all_num:
 		for j in all_num:
 			if i[0] != 0:
-				i_sig = str(i[0]).split('e')[0]
-				i_exp = str(i[0]).split('e')[1]
+				i_sig = str("{:e}".format((i[0]))).split('e')[0]
+				i_exp = str("{:e}".format((i[0]))).split('e')[1]
 			else:
 				i_sig = '0'
 				i_exp = '0'
 			if j[0] != 0:
-				j_sig = str(j[0]).split('e')[0]
-				j_exp = str(j[0]).split('e')[1]
+				j_sig = str("{:e}".format(j[0])).split('e')[0]
+				j_exp = str("{:e}".format(j[0])).split('e')[1]
 			else:
 				j_sig = '0'
 				j_exp = '0'
@@ -4073,7 +4083,7 @@ def ibm_b20(flen, opcode, ops, seed=-1):
 		sgn = '{:01b}'.format(sgn)
 		ir_bin = ('0b'+sgn+exp+sig)
 		ir = fields_dec_converter(flen,'0x'+hex(int('1'+ir_bin[2:],2))[3:])
-		ir_dataset.append([ir, 'Intermediate result significand: '+ sig + '  Pattern: ' + '1' + '0'*22])
+		ir_dataset.append([ir, 'Intermediate result significand: '+ sig + '  Pattern: ' + '1' + '0'*9])
 
 		sig = '0'*10
 		exp = random.getrandbits(5)
@@ -4082,9 +4092,9 @@ def ibm_b20(flen, opcode, ops, seed=-1):
 		sgn = '{:01b}'.format(sgn)
 		ir_bin = ('0b'+sgn+exp+sig)
 		ir = fields_dec_converter(flen,'0x'+hex(int('1'+ir_bin[2:],2))[3:])
-		ir_dataset.append([ir, 'Intermediate result significand: '+ sig + '  Pattern: ' + '0' + '0'*22])
+		ir_dataset.append([ir, 'Intermediate result significand: '+ sig + '  Pattern: ' + '0' + '0'*9])
 
-	if flen == 32:
+	elif flen == 32:
 		ieee754_maxnorm = '0x1.7fffffp+127'
 		maxnum = float.fromhex(ieee754_maxnorm)
 		ieee754_minsubnorm = '0x0.000001p-126'
@@ -4906,7 +4916,7 @@ def ibm_b27(flen, opcode, ops, seed=10):
 	'''
 	opcode = opcode.split('.')[0] + '.' + opcode.split('.')[1]
 
-	if flen == 32:
+	if flen == 16:
 		dataset = hsnan + hqnan
 	elif flen == 32:
 		dataset = fsnan + fqnan
@@ -5100,7 +5110,7 @@ def ibm_b29(flen, opcode, ops, seed=10):
 	sgns = ["0","1"]
 	dataset = []
 	if flen == 16:
-		mant = random.getrandbits(20)
+		mant = random.getrandbits(7)
 		mant = '{:07b}'.format(mant)
 		for sgn in sgns:
 			for i in range(8):
@@ -5154,3 +5164,6 @@ def ibm_b29(flen, opcode, ops, seed=10):
 	coverpoints = comments_parser(coverpoints)
 
 	return coverpoints
+
+if __name__=="__main__":
+	ibm_b3(flen=16,opcode="fmadd.h",ops=3)

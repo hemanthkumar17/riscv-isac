@@ -654,9 +654,12 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                 break        
 
     for cov_labels,value in cgf.items():
-        if instr.instr_name in ['sw','sd'] and str(value['opcode']).split("'")[1] in ['fclass.s','fclass.d','fcvt.w.d','fcvt.wu.d','feq.d','fle.d','flt.d','fcvt.l.s','fcvt.lu.s','fcvt.wu.s','fcvt.w.s','fle.s','feq.s','flt.s','fmv.x.w'] and stats.swFlag:
+        if instr.instr_name in ['sh','sw','sd'] and str(value['opcode']).split("'")[1] in ['fclass.h','fclass.s','fclass.d',\
+            'fcvt.w.d','fcvt.wu.d','feq.d','fle.d','flt.d',\
+            'fcvt.l.s','fcvt.lu.s','fcvt.wu.s','fcvt.w.s','fle.s','feq.s','flt.s','fmv.x.w',\
+            'fcvt.l.h','fcvt.lu.h','fcvt.wu.h','fcvt.w.h','fle.h','feq.h','flt.h','fmv.x.h'] and stats.swFlag:
             stats.swFlag = False
-        elif instr.instr_name in ['sw','sd'] and not stats.swFlag:
+        elif instr.instr_name in ['sh','sw','sd'] and not stats.swFlag:
             stats.swFlag = True
 
     if sig_update: # writing result operands of last non-store instruction to the signature region
@@ -798,7 +801,7 @@ def compute_per_line(instr, cgf, xlen, addr_pairs,  sig_addrs):
                                     l[0] = val_key + "  #nosat"
                                     val_key = l
                                     tempString = str(cgf[cov_labels]['val_comb'])
-                                    tempSubStr = str(val_key[0])                                    
+                                    tempSubStr = str(val_key[0])                                 
                                     #if(val_key[0] in cgf[cov_labels]['val_comb']):
                                     if(tempString.find(tempSubStr) != -1 ):
                                         if cgf[cov_labels]['val_comb'][val_key[0]] == 0:
@@ -976,9 +979,9 @@ def compute(trace_file, test_name, cgf, parser_name, decoder_name, detailed, xle
     #This has to be re-worked to handle both single and double precision dynamically
     #right now 64 is being passed (for flen) and this needs to be adjusted as per the instruction after the instruction is decoded
     #This flen value is being used in compute_per_line method to build the the  string, in-order to cross-veriy the coverpoints
-    arch_state = archState(xlen,16)
+    arch_state = archState(xlen, flen=16)
     csr_regfile = csr_registers(xlen)
-    stats = statistics(xlen, 16)
+    stats = statistics(xlen, flen=16)
     cross_cover_queue = []
     result_count = 0
 

@@ -1,10 +1,17 @@
 # See LICENSE.incore for details
-from math import *
-import riscv_isac.utils as utils
+import traceback
+import copy
 import itertools
 import random
+from math import *
+
+import riscv_isac.utils as utils
+import traceback
 import copy
+import itertools
+import random
 from riscv_isac.fp_dataset import *
+
 
 def twos(val,bits):
     '''
@@ -571,8 +578,8 @@ def expand_cgf(cgf_files, xlen):
                             i = 0
                             try:
                                 exp_cp = eval(coverpoints)
-                            except Exception as e:
-                                pass
+                            except Exception:
+                                logger.error(traceback.format_exc())
                             else:
                                 for cp,comment in exp_cp:
                                     cgf[labels][label].insert(1,cp,coverage,comment=comment)
