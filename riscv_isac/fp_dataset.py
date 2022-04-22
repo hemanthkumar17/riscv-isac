@@ -5164,6 +5164,3 @@ def ibm_b29(flen, opcode, ops, seed=10):
 	coverpoints = comments_parser(coverpoints)
 
 	return coverpoints
-
-if __name__=="__main__":
-	ibm_b3(flen=16,opcode="fmadd.h",ops=3)
